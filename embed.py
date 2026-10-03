@@ -48,18 +48,31 @@ collection.add(
 print("Total items in collection:", collection.count())
 
 
-# ---- Test query against real data ----
+def retrieve_chunks(query, n_results=3):
+    query_embedding = model.encode(query)
 
-query = "How does attention improve transformer performance?"
-query_embedding = model.encode(query)
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results
+    )
 
-results = collection.query(
-    query_embeddings=[query_embedding],
-    n_results=3
-)
+    # new — convert ChromaDB's nested format into a simple, flat list
+    clean_results = []
+    for i in range(len(results["documents"][0])):
+        clean_results.append({
+            "text": results["documents"][0][i],
+            "paper_title": results["metadatas"][0][i]["paper_title"],
+            "paper_author": results["metadatas"][0][i]["paper_author"],
+            "distance": results["distances"][0][i]
+        })
 
-for i in range(len(results["documents"][0])):
-    print("Chunk:", results["documents"][0][i][:100], "...")
-    print("From paper:", results["metadatas"][0][i]["paper_title"])
-    print("Distance:", results["distances"][0][i])
+    return clean_results
+
+
+results = retrieve_chunks("How does attention improve transformer performance?")
+
+for r in results:
+    print("Chunk:", r["text"][:100], "...")
+    print("From:", r["paper_title"])
+    print("Distance:", r["distance"])
     print("---")
